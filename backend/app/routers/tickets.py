@@ -1,22 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..schemas import (
-    TicketCreate,
-    TicketUpdateStatus,
-    TicketResponse
-)
-from ..crud import (
-    create_ticket,
-    get_ticket,
-    get_tickets,
-    delete_ticket
-)
-from ..dependencies import (
-    get_current_user,
-    admin_required
-)
+from ..schemas import TicketCreate, TicketUpdateStatus, TicketResponse
+from ..crud import create_ticket, get_ticket, get_tickets, delete_ticket
+from ..database import get_db, get_current_user, admin_required
+
+from ..models import User
 
 router = APIRouter(
     prefix="/tickets",
@@ -32,7 +21,7 @@ def create(
     return create_ticket(db, data)
 
 
-@router.get("/", response_model=list[TicketResponse])
+@router.get("/")
 def read_all(
     search: str = None,
     status: str = None,
@@ -43,9 +32,10 @@ def read_all(
     size: int = 10,
     db: Session = Depends(get_db)
 ):
+
     skip = (page - 1) * size
 
-    return get_tickets(
+    result = get_tickets(
         db=db,
         search=search,
         status=status,
@@ -56,9 +46,15 @@ def read_all(
         limit=size
     )
 
+    return {
+        "items": result["items"],
+        "total": result["total"],
+        "page": page,
+        "size": size
+    }
 
-@router.patch("/{ticket_id}",
-              response_model=TicketResponse)
+
+@router.patch("/{ticket_id}", response_model=TicketResponse)
 def change_status(
     ticket_id: int,
     data: TicketUpdateStatus,
@@ -93,9 +89,8 @@ def change_status(
 def remove(
     ticket_id: int,
     db: Session = Depends(get_db),
-    user=Depends(admin_required)
+    current_user: User = Depends(admin_required)  # Вот так правильно
 ):
-
     ticket = get_ticket(db, ticket_id)
 
     if not ticket:

@@ -1,59 +1,89 @@
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer
-from jose import jwt
-
+from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models import User
-from auth import SECRET_KEY, ALGORITHM
-
-security = HTTPBearer()
+from .models import Ticket
 
 
-def get_current_user(
-    credentials=Depends(security),
-    db: Session = Depends(get_db)
-):
+def create_ticket(db: Session, data):
+    ticket = Ticket(
+        title=data.title,
+        description=data.description,
+        priority=data.priority.value
+    )
 
-    token = credentials.credentials
+    db.add(ticket)
+    db.commit()
+    db.refresh(ticket)
 
-    try:
-        payload = jwt.decode(
-            token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
-        )
+    return ticket
 
-        username = payload.get("sub")
 
-    except Exception:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid token"
-        )
+def get_ticket(db: Session, ticket_id: int):
 
-    user = db.query(User).filter(
-        User.username == username
+    return db.query(Ticket).filter(
+        Ticket.id == ticket_id
     ).first()
 
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="User not found"
-        )
 
-    return user
+def delete_ticket(db: Session, ticket):
+
+    db.delete(ticket)
+    db.commit()
 
 
-def admin_required(
-    user: User = Depends(get_current_user)
+def get_tickets(
+        db: Session,
+        search=None,
+        status=None,
+        priority=None,
+        sort="created_at",
+        order="desc",
+        skip=0,
+        limit=10
 ):
 
-    if not user.is_admin:
-        raise HTTPException(
-            status_code=403,
-            detail="Administrator only"
+    query = db.query(Ticket)
+
+    if search:
+        query = query.filter(
+            or_(
+                Ticket.title.ilike(f"%{search}%"),
+                Ticket.description.ilike(f"%{search}%")
+            )
         )
 
-    return user
+    if status:
+        query = query.filter(
+            Ticket.status == status
+        )
+
+    if priority:
+        query = query.filter(
+            Ticket.priority == priority
+        )
+
+    total = query.count()
+
+    priority_order = case(
+        (Ticket.priority == "low", 1),
+        (Ticket.priority == "normal", 2),
+        (Ticket.priority == "high", 3),
+        else_=4
+    )
+
+    if sort == "priority":
+        column = priority_order
+    else:
+        column = Ticket.created_at
+
+    if order == "asc":
+        query = query.order_by(column.asc())
+    else:
+        query = query.order_by(column.desc())
+
+    items = query.offset(skip).limit(limit).all()
+
+    return {
+        "items": items,
+        "total": total
+    }
