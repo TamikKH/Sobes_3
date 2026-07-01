@@ -4,9 +4,9 @@ from jose import jwt
 
 from sqlalchemy.orm import Session
 
-from .database import get_db
-from .models import User
-from .auth import SECRET_KEY, ALGORITHM
+from database import get_db
+from models import User
+from auth import SECRET_KEY, ALGORITHM
 
 security = HTTPBearer()
 
