@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from .database import Base, engine, SessionLocal
@@ -10,6 +11,14 @@ from .routers import tickets
 
 app = FastAPI(
     title="Ticket System API"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 Base.metadata.create_all(bind=engine)

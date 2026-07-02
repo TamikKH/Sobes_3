@@ -1,66 +1,58 @@
-import {useState} from "react";
-
+import { useState } from "react";
 import api from "../api";
 
-export default function Login(){
+export default function Login() {
 
-    const [username,setUsername]=useState("");
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    async function login() {
 
-    const [password,setPassword]=useState("");
-
-    async function login(){
-
-        try{
-
-            const response=await api.post("/login",{
-
-                username,
-                password
-
-            });
+        try {
+            const response = await api.post(
+                "/login",
+                {
+                    username,
+                    password
+                }
+            );
 
             localStorage.setItem(
                 "token",
                 response.data.access_token
             );
 
-            alert("Login successful");
+            alert("Успешный вход");
 
-        }
+        } catch {
 
-        catch{
-
-            alert("Invalid login");
+            alert("Неверный логин или пароль");
 
         }
 
     }
 
-    return(
+    return (
 
         <div>
 
-            <h2>Admin Login</h2>
+            <h3>Вход администратора</h3>
 
             <input
-                placeholder="Username"
+                placeholder="Логин"
                 value={username}
                 onChange={(e)=>setUsername(e.target.value)}
             />
 
             <input
                 type="password"
-                placeholder="Password"
+                placeholder="Пароль"
                 value={password}
                 onChange={(e)=>setPassword(e.target.value)}
             />
 
             <button onClick={login}>
-                Login
+                Войти
             </button>
-
         </div>
-
     );
-
 }

@@ -1,49 +1,52 @@
-import {useState} from "react";
-
+import { useState } from "react";
 import api from "../api";
 
 interface Props{
-
     reload:()=>void;
-
 }
 
 export default function CreateTicket({reload}:Props){
-
     const [title,setTitle]=useState("");
-
     const [description,setDescription]=useState("");
-
     const [priority,setPriority]=useState("normal");
-
     async function create(){
 
-        await api.post("/tickets",{
+        try{
 
-            title,
+            await api.post(
+                "/tickets",
+                {
+                    title,
+                    description,
+                    priority
+                }
+            );
 
-            description,
+            setTitle("");
+            setDescription("");
+            setPriority("normal");
+            reload();
+        }
 
-            priority
+        catch (error: any) {
+    console.log(error);
 
-        });
-
-        setTitle("");
-
-        setDescription("");
-
-        reload();
-
+    alert(
+        error.response?.data?.detail ||
+        error.message ||
+        "Ошибка создания заявки"
+    );
+}
     }
 
     return(
 
         <div>
 
-            <h2>Create Ticket</h2>
+            <h3>Создать заявку</h3>
 
             <input
-                placeholder="Title"
+                placeholder="Название"
                 value={title}
                 onChange={(e)=>setTitle(e.target.value)}
             />
@@ -51,13 +54,12 @@ export default function CreateTicket({reload}:Props){
             <br/>
 
             <textarea
-                placeholder="Description"
+                placeholder="Описание"
                 value={description}
                 onChange={(e)=>setDescription(e.target.value)}
             />
 
             <br/>
-
             <select
                 value={priority}
                 onChange={(e)=>setPriority(e.target.value)}
@@ -68,15 +70,10 @@ export default function CreateTicket({reload}:Props){
                 <option value="normal">Normal</option>
 
                 <option value="high">High</option>
-
             </select>
-
             <button onClick={create}>
-                Create
+                Создать
             </button>
-
         </div>
-
     );
-
 }

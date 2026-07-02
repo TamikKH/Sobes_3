@@ -1,128 +1,142 @@
 import api from "../api";
+import { Ticket } from "../types";
 
-import {Ticket} from "../types";
-
-interface Props{
-
-    tickets:Ticket[];
-
-    reload:()=>void;
-
+interface Props {
+    tickets: Ticket[];
+    reload: () => void;
 }
 
-export default function TicketList({
+export default function TicketList({ tickets, reload }: Props) {
 
-    tickets,
+    async function changeStatus(id: number, status: string) {
+        try {
+            await api.patch(`/tickets/${id}/status`, {
+                status
+            });
 
-    reload
+            reload();
+        } catch (e: any) {
+            alert(
+                e.response?.data?.detail ??
+                "Ошибка изменения статуса"
+            );
+        }
+    }
 
-}:Props){
+    async function remove(id: number) {
 
-    async function changeStatus(
+        if (!confirm("Удалить заявку?")) return;
 
-        id:number,
+        try {
 
-        status:string
+            await api.delete(`/tickets/${id}`);
 
-    ){
+            reload();
 
-        await api.patch(
+        } catch (e: any) {
 
-            `/tickets/${id}`,
+            alert(
+                e.response?.data?.detail ??
+                "Ошибка удаления"
+            );
 
-            {status}
-
-        );
-
-        reload();
+        }
 
     }
 
-    async function remove(id:number){
+    return (
 
-        await api.delete(`/tickets/${id}`);
+        <table border={1} cellPadding={8}>
 
-        reload();
+            <thead>
 
-    }
+            <tr>
 
-    return(
+                <th>ID</th>
 
-        <div>
+                <th>Название</th>
 
-            <h2>Tickets</h2>
+                <th>Описание</th>
 
-            <table border={1}>
+                <th>Приоритет</th>
 
-                <thead>
+                <th>Статус</th>
 
-                <tr>
+                <th>Создана</th>
 
-                    <th>Title</th>
+                <th>Действия</th>
 
-                    <th>Status</th>
+            </tr>
 
-                    <th>Priority</th>
+            </thead>
 
-                    <th>Actions</th>
+            <tbody>
+
+            {tickets.map(ticket => (
+
+                <tr key={ticket.id}>
+
+                    <td>{ticket.id}</td>
+
+                    <td>{ticket.title}</td>
+
+                    <td>{ticket.description}</td>
+
+                    <td>{ticket.priority}</td>
+
+                    <td>
+
+                        <select
+                            value={ticket.status}
+                            onChange={(e) =>
+                                changeStatus(
+                                    ticket.id,
+                                    e.target.value
+                                )
+                            }
+                        >
+
+                            <option value="new">
+                                New
+                            </option>
+
+                            <option value="in_progress">
+                                In Progress
+                            </option>
+
+                            <option value="done">
+                                Done
+                            </option>
+
+                        </select>
+
+                    </td>
+
+                    <td>
+
+                        {new Date(
+                            ticket.created_at
+                        ).toLocaleString()}
+
+                    </td>
+
+                    <td>
+
+                        <button
+                            onClick={() => remove(ticket.id)}
+                        >
+                            Удалить
+                        </button>
+
+                    </td>
 
                 </tr>
 
-                </thead>
+            ))}
 
-                <tbody>
+            </tbody>
 
-                {
-
-                    tickets.map(ticket=>(
-
-                        <tr key={ticket.id}>
-
-                            <td>{ticket.title}</td>
-
-                            <td>{ticket.status}</td>
-
-                            <td>{ticket.priority}</td>
-
-                            <td>
-
-                                <button
-                                    onClick={()=>changeStatus(
-                                        ticket.id,
-                                        "in_progress"
-                                    )}
-                                >
-                                    In Progress
-                                </button>
-
-                                <button
-                                    onClick={()=>changeStatus(
-                                        ticket.id,
-                                        "done"
-                                    )}
-                                >
-                                    Done
-                                </button>
-
-                                <button
-                                    onClick={()=>remove(ticket.id)}
-                                >
-                                    Delete
-                                </button>
-
-                            </td>
-
-                        </tr>
-
-                    ))
-
-                }
-
-                </tbody>
-
-            </table>
-
-        </div>
+        </table>
 
     );
 
